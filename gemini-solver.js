@@ -1,16 +1,12 @@
-// ==UserScript==
-// @name         Gemini Exam Solver (k12online)
-// @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Uses Gemini 2.5 Flash to solve active questions on k12online.vn
-// @author       Your Name
-// @match        *://*.k12online.vn/*
-// @grant        GM_xmlhttpRequest
-// @connect      generativelanguage.googleapis.com
-// ==/UserScript==
-
 (function() {
     'use strict';
+
+    // Prevent duplicate UI if the script is loaded multiple times
+    if (document.getElementById('gemini-helper-ui')) {
+        document.getElementById('gemini-helper-ui').style.display = 'flex';
+        console.log("Gemini UI is already active!");
+        return;
+    }
 
     // ==========================================
     // 1. CREATE THE USER INTERFACE
@@ -22,7 +18,6 @@
                 <span id="gemini-close" style="cursor: pointer;">✖</span>
             </div>
             <div style="padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                <!-- API KEY INPUT: Stays strictly local in the browser -->
                 <input type="password" id="gemini-api-key" placeholder="Enter Gemini API Key" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box;">
                 <button id="gemini-solve-btn" style="background: #F16022; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">Solve Current Question</button>
                 <div id="gemini-status" style="font-size: 12px; color: #666; display: none;">Processing...</div>
@@ -31,26 +26,23 @@
         </div>
     `;
 
-    // Only inject if it doesn't already exist and we are on an exam page
-    function injectUI() {
-        if(!document.getElementById('gemini-helper-ui')) {
-            document.body.insertAdjacentHTML('beforeend', uiHtml);
-            
-            // Load saved API key from local storage
-            const savedKey = localStorage.getItem('gemini_api_key_local');
-            if(savedKey) document.getElementById('gemini-api-key').value = savedKey;
+    document.body.insertAdjacentHTML('beforeend', uiHtml);
 
-            // UI Event Listeners
-            document.getElementById('gemini-close').addEventListener('click', () => {
-                document.getElementById('gemini-helper-ui').style.display = 'none';
-            });
-
-            document.getElementById('gemini-solve-btn').addEventListener('click', processCurrentQuestion);
-        }
+    // KEY LOGIC: Check window.geminiKey (from console) -> then localStorage -> then leave blank
+    const keyInput = document.getElementById('gemini-api-key');
+    if (window.geminiKey) {
+        keyInput.value = window.geminiKey;
+        localStorage.setItem('gemini_api_key_local', window.geminiKey); // save for next time
+    } else {
+        const savedKey = localStorage.getItem('gemini_api_key_local');
+        if(savedKey) keyInput.value = savedKey;
     }
 
-    // Wait a brief moment for the site to load, then inject
-    setTimeout(injectUI, 2000);
+    // UI Event Listeners
+    document.getElementById('gemini-close').addEventListener('click', () => {
+        document.getElementById('gemini-helper-ui').style.display = 'none';
+    });
+    document.getElementById('gemini-solve-btn').addEventListener('click', processCurrentQuestion);
 
     // ==========================================
     // 2. LOGIC TO EXTRACT DATA & CALL API
@@ -64,8 +56,7 @@
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     const base64data = reader.result.split(',')[1];
-                    const mimeType = blob.type;
-                    resolve({ data: base64data, mime_type: mimeType });
+                    resolve({ data: base64data, mime_type: blob.type });
                 };
                 reader.onerror = reject;
                 reader.readAsDataURL(blob);
@@ -77,21 +68,21 @@
     }
 
     async function processCurrentQuestion() {
+        // Read key from UI (which was populated by window.geminiKey)
         const apiKey = document.getElementById('gemini-api-key').value.trim();
         const resultDiv = document.getElementById('gemini-result');
         const statusDiv = document.getElementById('gemini-status');
 
         if (!apiKey) {
-            resultDiv.innerHTML = "<span style='color:red'>Please enter your Gemini API Key first.</span>";
+            resultDiv.innerHTML = "<span style='color:red'>Please enter your Gemini API Key.</span>";
             return;
         }
 
-        // Save key LOCALLY in the browser for future use
+        // Save key LOCALLY in the browser for future questions
         localStorage.setItem('gemini_api_key_local', apiKey);
-
+        
         // Find active question
         const activeQuestionEl = document.querySelector('.item-question[style*="display: block"]');
-        
         if (!activeQuestionEl) {
             resultDiv.innerHTML = "<span style='color:red'>Could not find an active question on the screen.</span>";
             return;
@@ -102,7 +93,6 @@
         resultDiv.innerText = '';
 
         try {
-            // Extract Text
             const titleEl = activeQuestionEl.querySelector('.title');
             const questionText = titleEl ? titleEl.innerText : "No text found";
 
@@ -114,7 +104,6 @@
 
             let fullPrompt = `You are an expert test solver. Please look at the following question and options, and tell me the correct answer. Provide a brief explanation.\n\nQuestion:\n${questionText}\n\nOptions:\n${optionsText}`;
 
-            // Extract Images
             const imgElements = activeQuestionEl.querySelectorAll('img');
             let imageParts = [];
             
@@ -135,14 +124,10 @@
                 }
             }
 
-            // Construct payload
             statusDiv.innerText = 'Sending to Gemini API...';
             const payload = {
                 "contents": [{
-                    "parts": [
-                        {"text": fullPrompt},
-                        ...imageParts 
-                    ]
+                    "parts": [ {"text": fullPrompt}, ...imageParts ]
                 }]
             };
 
@@ -150,9 +135,7 @@
             
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
@@ -162,7 +145,6 @@
             }
 
             const data = await response.json();
-            
             if (data.candidates && data.candidates.length > 0) {
                 const answer = data.candidates[0].content.parts[0].text;
                 resultDiv.innerHTML = answer.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
@@ -174,7 +156,7 @@
             console.error(error);
             resultDiv.innerHTML = `<span style='color:red'>Error: ${error.message}</span>`;
             if(error.message.includes("models/gemini-2.5-flash is not found")) {
-               resultDiv.innerHTML += `<br><br><i>Note: Gemini 2.5 Flash might not be available yet. Edit the script to use <b>gemini-2.0-flash</b> or <b>gemini-1.5-flash</b> instead.</i>`;
+               resultDiv.innerHTML += `<br><br><i>Note: Gemini 2.5 Flash might not be available. Edit your GitHub script to use <b>gemini-2.0-flash</b>.</i>`;
             }
         } finally {
             statusDiv.style.display = 'none';
