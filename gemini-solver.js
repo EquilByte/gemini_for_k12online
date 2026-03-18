@@ -13,9 +13,10 @@
     const uiHtml = `
         <div id="gemini-extension-container" style="z-index: 999999; position: fixed; bottom: 20px; right: 20px; font-family: Arial, sans-serif;">
             
-            <!-- Tiny Floating Toggle Button (Hidden by default) -->
-            <div id="gemini-toggle-btn" style="display: none; width: 45px; height: 45px; background: #1a237e; color: white; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 24px; user-select: none;">
-                🤖
+            <!-- Camouflaged Toggle Button (Looks like "Nộp bài") -->
+            <div id="gemini-toggle-btn" style="display: none; background: #1a237e; color: white; padding: 11px 15px; border-radius: 4px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); font-weight: 700; font-size: 14px; user-select: none; align-items: center; justify-content: center; gap: 8px;">
+                <span>Nộp bài</span>
+                <svg width="18" height="16" viewBox="0 0 18 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M16.7551 6.98177L16.7495 6.9793L1.73496 0.751726C1.60867 0.698868 1.47125 0.678138 1.33499 0.69139C1.19873 0.704642 1.06788 0.751462 0.954141 0.827664C0.833975 0.906403 0.735269 1.01378 0.666905 1.14014C0.598541 1.26649 0.562664 1.40787 0.5625 1.55153V5.53438C0.562567 5.73078 0.631146 5.92101 0.756417 6.07227C0.881688 6.22353 1.0558 6.32635 1.24875 6.36302L9.4377 7.87719C9.46988 7.8833 9.49891 7.90044 9.51981 7.92566C9.5407 7.95088 9.55213 7.98261 9.55213 8.01536C9.55213 8.04811 9.5407 8.07984 9.51981 8.10506C9.49891 8.13028 9.46988 8.14742 9.4377 8.15352L1.2491 9.6677C1.05621 9.70427 0.882103 9.80696 0.756776 9.95808C0.631449 10.1092 0.562746 10.2993 0.5625 10.4956V14.4792C0.562407 14.6164 0.596375 14.7514 0.661355 14.8723C0.726336 14.9931 0.820296 15.0959 0.934805 15.1714C1.07255 15.2629 1.2342 15.3118 1.39957 15.312C1.51454 15.3119 1.62833 15.2889 1.73426 15.2442L16.7484 9.05212L16.7551 9.04895C16.9572 8.9621 17.1294 8.8179 17.2504 8.63419C17.3714 8.45049 17.4359 8.23534 17.4359 8.01536C17.4359 7.79538 17.3714 7.58023 17.2504 7.39653C17.1294 7.21282 16.9572 7.06862 16.7551 6.98177Z" fill="white"></path></svg>
             </div>
 
             <!-- Main Panel -->
@@ -53,7 +54,7 @@
 
     function hidePanel() {
         mainPanel.style.display = 'none';
-        toggleBtn.style.display = 'flex';
+        toggleBtn.style.display = 'flex'; // Uses flex to align the text and icon perfectly
     }
 
     function showPanel() {
@@ -65,7 +66,6 @@
     toggleBtn.addEventListener('click', showPanel);
 
     // ANTI-CHEAT BYPASS KEYBOARD SHORTCUT: Alt + Q
-    // We use "true" (capture phase) to trigger this BEFORE the school's anti-cheat script blocks the Alt key
     window.addEventListener('keydown', (e) => {
         if (e.altKey && e.key.toLowerCase() === 'q') {
             e.preventDefault();
