@@ -2,8 +2,7 @@
     'use strict';
 
     // Prevent duplicate UI if the script is loaded multiple times
-    if (document.getElementById('gemini-helper-ui')) {
-        document.getElementById('gemini-helper-ui').style.display = 'flex';
+    if (document.getElementById('gemini-extension-container')) {
         console.log("Gemini UI is already active!");
         return;
     }
@@ -12,36 +11,70 @@
     // 1. CREATE THE USER INTERFACE
     // ==========================================
     const uiHtml = `
-        <div id="gemini-helper-ui" style="position: fixed; bottom: 20px; right: 20px; width: 350px; background: #ffffff; border: 2px solid #1a237e; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 999999; font-family: Arial, sans-serif; display: flex; flex-direction: column; overflow: hidden;">
-            <div style="background: #1a237e; color: white; padding: 10px; font-weight: bold; display: flex; justify-content: space-between;">
-                <span>🤖 Gemini Exam Solver</span>
-                <span id="gemini-close" style="cursor: pointer;">✖</span>
+        <div id="gemini-extension-container" style="z-index: 999999; position: fixed; bottom: 20px; right: 20px; font-family: Arial, sans-serif;">
+            
+            <!-- Tiny Floating Toggle Button (Hidden by default) -->
+            <div id="gemini-toggle-btn" style="display: none; width: 45px; height: 45px; background: #1a237e; color: white; border-radius: 50%; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.15); font-size: 24px; user-select: none;">
+                🤖
             </div>
-            <div style="padding: 15px; display: flex; flex-direction: column; gap: 10px;">
-                <input type="password" id="gemini-api-key" placeholder="Enter Gemini API Key" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box;">
-                <button id="gemini-solve-btn" style="background: #F16022; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">Solve Current Question</button>
-                <div id="gemini-status" style="font-size: 12px; color: #666; display: none;">Processing...</div>
-                <div id="gemini-result" style="background: #f2f8ff; padding: 10px; border-radius: 4px; border: 1px solid #cce0ff; min-height: 80px; max-height: 200px; overflow-y: auto; font-size: 14px; white-space: pre-wrap;">Answers will appear here...</div>
+
+            <!-- Main Panel -->
+            <div id="gemini-helper-ui" style="width: 350px; background: #ffffff; border: 2px solid #1a237e; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; flex-direction: column; overflow: hidden;">
+                <div style="background: #1a237e; color: white; padding: 10px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+                    <span>🤖 Gemini Exam Solver</span>
+                    <span id="gemini-close" title="Hide Panel (Alt+Q)" style="cursor: pointer; padding: 0 5px; font-size: 16px;">✖</span>
+                </div>
+                <div style="padding: 15px; display: flex; flex-direction: column; gap: 10px;">
+                    <input type="password" id="gemini-api-key" placeholder="Enter Gemini API Key" style="padding: 8px; border: 1px solid #ccc; border-radius: 4px; width: 100%; box-sizing: border-box;">
+                    <button id="gemini-solve-btn" style="background: #F16022; color: white; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">Solve Current Question</button>
+                    <div id="gemini-status" style="font-size: 12px; color: #666; display: none;">Processing...</div>
+                    <div id="gemini-result" style="background: #f2f8ff; padding: 10px; border-radius: 4px; border: 1px solid #cce0ff; min-height: 80px; max-height: 200px; overflow-y: auto; font-size: 14px; white-space: pre-wrap;">Answers will appear here...</div>
+                </div>
             </div>
         </div>
     `;
 
     document.body.insertAdjacentHTML('beforeend', uiHtml);
 
-    // KEY LOGIC: Check window.geminiKey (from console) -> then localStorage -> then leave blank
+    // KEY LOGIC
     const keyInput = document.getElementById('gemini-api-key');
     if (window.geminiKey) {
         keyInput.value = window.geminiKey;
-        localStorage.setItem('gemini_api_key_local', window.geminiKey); // save for next time
+        localStorage.setItem('gemini_api_key_local', window.geminiKey);
     } else {
         const savedKey = localStorage.getItem('gemini_api_key_local');
         if(savedKey) keyInput.value = savedKey;
     }
 
-    // UI Event Listeners
-    document.getElementById('gemini-close').addEventListener('click', () => {
-        document.getElementById('gemini-helper-ui').style.display = 'none';
+    // UI TOGGLE LOGIC
+    const mainPanel = document.getElementById('gemini-helper-ui');
+    const toggleBtn = document.getElementById('gemini-toggle-btn');
+    const closeBtn = document.getElementById('gemini-close');
+
+    function hidePanel() {
+        mainPanel.style.display = 'none';
+        toggleBtn.style.display = 'flex';
+    }
+
+    function showPanel() {
+        toggleBtn.style.display = 'none';
+        mainPanel.style.display = 'flex';
+    }
+
+    closeBtn.addEventListener('click', hidePanel);
+    toggleBtn.addEventListener('click', showPanel);
+
+    // Stealth Keyboard Shortcut: Alt + Q
+    document.addEventListener('keydown', (e) => {
+        if (e.altKey && e.key.toLowerCase() === 'q') {
+            if (mainPanel.style.display === 'none') {
+                showPanel();
+            } else {
+                hidePanel();
+            }
+        }
     });
+
     document.getElementById('gemini-solve-btn').addEventListener('click', processCurrentQuestion);
 
     // ==========================================
@@ -68,7 +101,6 @@
     }
 
     async function processCurrentQuestion() {
-        // Read key from UI (which was populated by window.geminiKey)
         const apiKey = document.getElementById('gemini-api-key').value.trim();
         const resultDiv = document.getElementById('gemini-result');
         const statusDiv = document.getElementById('gemini-status');
@@ -78,10 +110,8 @@
             return;
         }
 
-        // Save key LOCALLY in the browser for future questions
         localStorage.setItem('gemini_api_key_local', apiKey);
         
-        // Find active question
         const activeQuestionEl = document.querySelector('.item-question[style*="display: block"]');
         if (!activeQuestionEl) {
             resultDiv.innerHTML = "<span style='color:red'>Could not find an active question on the screen.</span>";
