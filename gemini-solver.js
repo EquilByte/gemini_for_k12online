@@ -64,16 +64,19 @@
     closeBtn.addEventListener('click', hidePanel);
     toggleBtn.addEventListener('click', showPanel);
 
-    // Stealth Keyboard Shortcut: Alt + Q
-    document.addEventListener('keydown', (e) => {
+    // ANTI-CHEAT BYPASS KEYBOARD SHORTCUT: Alt + Q
+    // We use "true" (capture phase) to trigger this BEFORE the school's anti-cheat script blocks the Alt key
+    window.addEventListener('keydown', (e) => {
         if (e.altKey && e.key.toLowerCase() === 'q') {
+            e.preventDefault();
+            e.stopPropagation();
             if (mainPanel.style.display === 'none') {
                 showPanel();
             } else {
                 hidePanel();
             }
         }
-    });
+    }, true);
 
     document.getElementById('gemini-solve-btn').addEventListener('click', processCurrentQuestion);
 
