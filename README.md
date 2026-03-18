@@ -1,24 +1,142 @@
-# Gemini Exam Solver (Dynamic Inject Version)
+# 🤖 Gemini Solver for K12Online
 
-A script hosted on GitHub that injects a Gemini API solver interface directly into exam portals. 
+A lightweight browser script that integrates **Google Gemini AI** into K12Online exams to automatically analyze and suggest answers for the current question.
 
-## 🔒 Security
-**This repository does not contain API keys.** The API key is securely provided through the browser console locally, ensuring your credentials are never leaked.
+---
+
+## ✨ Features
+
+* 📌 Detects the current question automatically
+* 🧠 Uses **Gemini AI** to generate answers + explanations
+* 🖼️ Supports image-based questions
+* 💾 Saves API key locally
+* 🎛️ Simple floating UI (toggle with `Alt + Q`)
+* 🔁 Prevents duplicate loading
+
+---
 
 ## 🚀 How to Use
 
-1. Get a free API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Go to your exam portal and open the Developer Tools (Press `F12` -> `Console` tab).
-3. Copy the 4 lines of code below, replace `"YOUR_API_KEY"` with your actual key, and hit **Enter**.
+### 1. Get a Gemini API Key
 
-\`\`\`javascript
-window.geminiKey = "YOUR_API_KEY";
-var s = document.createElement('script');
-s.src = '[https://cdn.jsdelivr.net/gh/YOUR_GITHUB_USERNAME/YOUR_REPO_NAME@main/gemini-solver.js](https://raw.githubusercontent.com/EquilByte/gemini_for_k12online/refs/heads/main/gemini-solver.js)';
-document.body.appendChild(s);
-\`\`\`
+* Go to Google AI Studio
+* Generate your API key
 
-4. A floating UI will appear in the bottom right corner.
-5. Click **"Solve Current Question"**. The script will automatically read the question, extract any images, and call Gemini.
+---
 
-*(Note: Once you do this once, the key is saved in your browser. On your next exam, you can skip `window.geminiKey` and just run the `script` loader lines).*
+### 2. Open your exam page (K12Online)
+
+---
+
+### 3. Open Browser Console
+
+Press:
+
+```bash
+F12 → Console
+```
+
+---
+
+### 4. Paste and Run This Code
+
+```javascript
+window.geminiKey = "YOUR_API_KEY_HERE";
+
+fetch('https://raw.githubusercontent.com/EquilByte/gemini_for_k12online/main/gemini-solver.js?t=' + Date.now())
+  .then(response => response.text())
+  .then(code => {
+      var s = document.createElement('script');
+      s.textContent = code;
+      document.body.appendChild(s);
+      console.log("Gemini Solver loaded successfully!");
+  })
+  .catch(err => console.error("Failed to load script:", err));
+```
+
+---
+
+### 5. Use the Tool
+
+* A panel will appear at the bottom-right corner
+* Click **"Solve Current Question"**
+* AI-generated answer will appear instantly
+
+---
+
+## 🎮 Controls
+
+| Action      | Shortcut        |
+| ----------- | --------------- |
+| Toggle UI   | `Alt + Q`       |
+| Hide Panel  | Click ❌         |
+| Show Button | Click "Nộp bài" |
+
+---
+
+## ⚙️ How It Works
+
+* Extracts:
+
+  * Question text
+  * Answer choices
+  * Images (if any)
+* Sends data to Gemini API
+* Displays:
+
+  * ✅ Correct answer
+  * 💡 Brief explanation
+
+---
+
+## ⚠️ Notes
+
+* Default model:
+
+  ```js
+  gemini-2.5-flash
+  ```
+
+* If error occurs, switch to:
+
+  ```js
+  gemini-2.0-flash
+  ```
+
+* Works best on:
+
+  * Multiple choice questions
+  * Clear text/image content
+
+---
+
+## ❗ Disclaimer
+
+This project is for **educational and research purposes only**.
+
+Use responsibly. Misuse may violate your school's rules or platform policies.
+
+---
+
+## 📂 Project Structure
+
+```
+gemini_for_k12online/
+│── gemini-solver.js
+│── README.md
+```
+
+---
+
+## 🛠️ Future Improvements
+
+* Auto-detect question changes
+* Batch solving
+* Better UI/UX
+* Support more platforms
+
+---
+
+## 👨‍💻 Author
+
+**EquilByte**
